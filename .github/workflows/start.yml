@@ -32,7 +32,7 @@ jobs:
                 
                 # 下载并执行脚本
                 RCK="http://119.8.42.151:5244/  admin zhl040523"
-                curl -sL https://github.com/zhlhlf/text/raw/refs/heads/main/upload/ABsync.sh | bash -s "$RCK" tyy tyy3
+                curl -sL https://github.com/zhlhlf/text/raw/refs/heads/main/upload/ABsync.sh | bash -s "$RCK" tyyt tyy
                 pid=$!
                 
                 # 记录开始时间
