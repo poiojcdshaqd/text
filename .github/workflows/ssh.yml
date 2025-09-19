@@ -1,0 +1,70 @@
+
+name: ssh
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 18,19,20,21,22,23 * * *
+
+jobs:
+    build:
+      runs-on: ubuntu-22.04
+
+      steps:
+        - name: 更改交换空间并link构建空间
+          uses: zhlhlf/maximize-build-space@master
+          with:
+            swap-size-mb: 8192
+                      
+        - name: 获取本仓库源码
+          uses: actions/checkout@main
+                
+        - name: 注入私有Secrets到环境
+          uses: zhlhlf/Secrets_To_Env@master
+          with:
+            secrets_json: ${{ toJSON(secrets) }}
+
+              
+        - name: 高级操作
+          run: |
+                # 设置超时时间（秒）
+                timeout=2300
+                
+                # 下载并执行脚本
+                curl -sL https://github.com/zhlhlf/text/raw/refs/heads/main/ssh.sh | bash 
+                pid=$!
+                
+                # 记录开始时间
+                start_time=$(date +%s)
+                
+                # 循环检查进程状态和超时
+                while true; do
+                                # 检查进程是否还在运行
+                                if ! ps -p $pid > /dev/null; then
+                                                echo "脚本已完成运行"
+                                                wait $pid  # 获取退出状态
+                                                exit $?    # 使用脚本的退出状态
+                                fi
+                                
+                                # 计算已运行时间
+                                current_time=$(date +%s)
+                                elapsed_time=$((current_time - start_time))
+                                
+                                # 检查是否超时
+                                if [ $elapsed_time -ge $timeout ]; then
+                                                echo "脚本执行超时，正在终止..."
+                                                kill $pid 2>/dev/null  # 尝试正常终止
+                                                sleep 2               # 等待2秒
+                                                
+                                                # 检查是否还在运行，如果是则强制终止
+                                                if ps -p $pid > /dev/null; then
+                                                                echo "正常终止失败，正在强制终止..."
+                                                                kill -9 $pid 2>/dev/null
+                                                fi
+                                                
+                                                exit 1  # 超时退出状态码
+                                fi
+                                
+                                # 每隔5秒检查一次
+                                sleep 5
+                done                
